@@ -1,4 +1,3 @@
-````markdown
 # Kartavya - Task Management System
 
 A full-stack task management application with user authentication, task assignment, and file attachments.
@@ -152,5 +151,4 @@ REACT_APP_API_URL=http://localhost:5001/api
 
 This project is licensed under the MIT License.
 
-```
 
