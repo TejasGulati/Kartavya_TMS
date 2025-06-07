@@ -1,23 +1,46 @@
+// /Users/tejasgulati/Desktop/kartavya/client/src/pages/RegisterPage.js
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link} from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { toast } from 'react-hot-toast';
 
 const RegisterPage = () => {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: ''
+  });
+  const [errors, setErrors] = useState({});
   const { register } = useAuth();
-  const navigate = useNavigate();
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validation
+    const newErrors = {};
+    if (!formData.name.trim()) newErrors.name = 'Name is required';
+    if (!formData.email.trim()) newErrors.email = 'Email is required';
+    if (!formData.password) newErrors.password = 'Password is required';
+    if (formData.password.length < 6) newErrors.password = 'Password must be at least 6 characters';
+    if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+    
     try {
-      await register(name, email, password);
-      toast.success('Registration successful!');
-      navigate('/tasks');
+      await register(formData.name, formData.email, formData.password);
     } catch (error) {
-      toast.error(error || 'Registration failed');
+      // Error handling is done in the register function
     }
   };
 
@@ -40,43 +63,60 @@ const RegisterPage = () => {
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md shadow-sm -space-y-px">
             <div className="mb-4">
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
               <input
                 id="name"
                 name="name"
                 type="text"
                 required
-                className="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className={`appearance-none relative block w-full px-4 py-3 border ${errors.name ? 'border-red-300' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
                 placeholder="John Doe"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                value={formData.name}
+                onChange={handleChange}
               />
+              {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
             </div>
             <div className="mb-4">
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
               <input
                 id="email"
                 name="email"
                 type="email"
                 required
-                className="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className={`appearance-none relative block w-full px-4 py-3 border ${errors.email ? 'border-red-300' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
                 placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={formData.email}
+                onChange={handleChange}
               />
+              {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
             </div>
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            <div className="mb-4">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Password *</label>
               <input
                 id="password"
                 name="password"
                 type="password"
                 required
-                className="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className={`appearance-none relative block w-full px-4 py-3 border ${errors.password ? 'border-red-300' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
                 placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                value={formData.password}
+                onChange={handleChange}
               />
+              {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
+            </div>
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">Confirm Password *</label>
+              <input
+                id="confirmPassword"
+                name="confirmPassword"
+                type="password"
+                required
+                className={`appearance-none relative block w-full px-4 py-3 border ${errors.confirmPassword ? 'border-red-300' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
+                placeholder="••••••••"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+              />
+              {errors.confirmPassword && <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>}
             </div>
           </div>
 

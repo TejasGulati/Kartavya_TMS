@@ -1,3 +1,4 @@
+// /Users/tejasgulati/Desktop/kartavya/client/src/context/TaskContext.js
 import { createContext, useContext, useState, useCallback } from 'react';
 import api from '../services/api';
 import { toast } from 'react-hot-toast';
@@ -8,23 +9,33 @@ export const TaskProvider = ({ children }) => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentTask, setCurrentTask] = useState(null);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    pages: 1,
+  });
 
   const fetchTasks = useCallback(async (filters = {}) => {
     try {
       setLoading(true);
-      const query = new URLSearchParams({
-        status: filters.status || '',
-        priority: filters.priority || '',
-        sort: filters.sort || 'dueDate',
-        order: filters.order || 'asc',
-        page: filters.page || 1,
-        limit: filters.limit || 10,
-        ...(filters.assignedTo && { assignedTo: filters.assignedTo }),
-        ...(filters.createdBy && { createdBy: filters.createdBy }),
-      }).toString();
+      const queryParams = new URLSearchParams();
+      
+      // Add all filter parameters
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== '' && value !== null) {
+          queryParams.append(key, value);
+        }
+      });
 
-      const res = await api.get(`/api/tasks?${query}`);
+      const res = await api.get(`/api/tasks?${queryParams.toString()}`);
       setTasks(res.data.tasks);
+      setPagination({
+        page: res.data.page,
+        limit: res.data.limit,
+        total: res.data.total,
+        pages: res.data.pages,
+      });
       return res.data;
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to fetch tasks');
@@ -54,11 +65,15 @@ export const TaskProvider = ({ children }) => {
       
       // Append all task fields
       Object.entries(taskData).forEach(([key, value]) => {
-        if (value !== null && value !== undefined && value !== '') {
+        if (value !== null && value !== undefined) {
           if (key === 'attachments' && Array.isArray(value)) {
             value.forEach(file => {
               formData.append('attachments', file);
             });
+          } else if (key === 'tags' && Array.isArray(value)) {
+            value.forEach(tag => formData.append('tags', tag));
+          } else if (key === 'dueDate') {
+            formData.append(key, new Date(value).toISOString());
           } else {
             formData.append(key, value);
           }
@@ -73,7 +88,13 @@ export const TaskProvider = ({ children }) => {
       toast.success('Task created successfully');
       return res.data.task;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to create task');
+      if (error.response?.data?.errors) {
+        error.response.data.errors.forEach(err => {
+          toast.error(`${err.field}: ${err.message}`);
+        });
+      } else {
+        toast.error(error.response?.data?.message || 'Failed to create task');
+      }
       throw error;
     }
   }, []);
@@ -84,7 +105,13 @@ export const TaskProvider = ({ children }) => {
       toast.success('Task updated successfully');
       return res.data.task;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to update task');
+      if (error.response?.data?.errors) {
+        error.response.data.errors.forEach(err => {
+          toast.error(`${err.field}: ${err.message}`);
+        });
+      } else {
+        toast.error(error.response?.data?.message || 'Failed to update task');
+      }
       throw error;
     }
   }, []);
@@ -172,6 +199,7 @@ export const TaskProvider = ({ children }) => {
         tasks,
         currentTask,
         loading,
+        pagination,
         fetchTasks,
         getTaskById,
         createTask,

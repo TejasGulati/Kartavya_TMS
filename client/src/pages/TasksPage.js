@@ -1,29 +1,26 @@
-import { useEffect, useState, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+// /Users/tejasgulati/Desktop/kartavya/client/src/pages/TasksPage.js
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTasks } from '../context/TaskContext';
 import { toast } from 'react-hot-toast';
-import api from '../services/api';
+import api from '../services/api'
 
 const TasksPage = () => {
   const [filters, setFilters] = useState({
     status: '',
     priority: '',
     assignedTo: '',
+    createdBy: '',
     sort: 'dueDate',
     order: 'asc',
     page: 1,
     limit: 10
   });
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 10,
-    total: 0
-  });
   const [users, setUsers] = useState([]);
   
   const { user } = useAuth();
-  const { tasks, fetchTasks, deleteTask, loading } = useTasks();
+  const { tasks, fetchTasks, deleteTask, loading, pagination } = useTasks();
   const navigate = useNavigate();
 
   // Fetch users for admin filter
@@ -39,22 +36,19 @@ const TasksPage = () => {
     if (user?.role === 'admin') fetchUsers();
   }, [user]);
 
-  const loadTasks = useCallback(async () => {
-    try {
-      const data = await fetchTasks(filters);
-      setPagination({
-        page: data.page || 1,
-        limit: data.limit || 10,
-        total: data.total || 0
-      });
-    } catch (error) {
-      toast.error(error.response?.data?.message || error.message || 'Failed to load tasks');
-    }
-  }, [fetchTasks, filters]);
-
   useEffect(() => {
+    const loadTasks = async () => {
+      try {
+        await fetchTasks({
+          ...filters,
+          ...(user?.role !== 'admin' && { assignedTo: user?._id })
+        });
+      } catch (error) {
+        toast.error(error.message || 'Failed to load tasks');
+      }
+    };
     loadTasks();
-  }, [loadTasks]);
+  }, [filters, user, fetchTasks]);
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
@@ -70,9 +64,8 @@ const TasksPage = () => {
       try {
         await deleteTask(id);
         toast.success('Task deleted successfully');
-        loadTasks();
       } catch (error) {
-        toast.error(error.response?.data?.message || error.message || 'Failed to delete task');
+        toast.error(error.message || 'Failed to delete task');
       }
     }
   };
@@ -93,7 +86,7 @@ const TasksPage = () => {
     }
   };
 
-  if (loading) {
+  if (loading && tasks.length === 0) {
     return (
       <div className="flex justify-center py-12">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
@@ -152,22 +145,40 @@ const TasksPage = () => {
           </div>
           
           {user?.role === 'admin' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Assigned To</label>
-              <select
-                name="assignedTo"
-                value={filters.assignedTo}
-                onChange={handleFilterChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              >
-                <option value="">All Users</option>
-                {users.map(u => (
-                  <option key={u._id} value={u._id}>
-                    {u.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Assigned To</label>
+                <select
+                  name="assignedTo"
+                  value={filters.assignedTo}
+                  onChange={handleFilterChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                  <option value="">All Users</option>
+                  {users.map(u => (
+                    <option key={u._id} value={u._id}>
+                      {u.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Created By</label>
+                <select
+                  name="createdBy"
+                  value={filters.createdBy}
+                  onChange={handleFilterChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                  <option value="">All Creators</option>
+                  {users.map(u => (
+                    <option key={u._id} value={u._id}>
+                      {u.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </>
           )}
           
           <div>
@@ -181,6 +192,7 @@ const TasksPage = () => {
               <option value="dueDate">Due Date</option>
               <option value="priority">Priority</option>
               <option value="status">Status</option>
+              <option value="createdAt">Created Date</option>
             </select>
           </div>
           
@@ -203,6 +215,7 @@ const TasksPage = () => {
                 status: '',
                 priority: '',
                 assignedTo: '',
+                createdBy: '',
                 sort: 'dueDate',
                 order: 'asc',
                 page: 1,
@@ -222,7 +235,7 @@ const TasksPage = () => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
           </svg>
           <h3 className="mt-4 text-xl font-medium text-gray-900">No tasks found</h3>
-          <p className="mt-1 text-gray-500">Create your first task to get started</p>
+          <p className="mt-1 text-gray-500">Try adjusting your filters or create a new task</p>
           <button
             onClick={() => navigate('/tasks/new')}
             className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none"
@@ -232,87 +245,90 @@ const TasksPage = () => {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {tasks.map(task => (
-              <div key={task._id} className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-                <div className="p-5">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h2 className="text-lg font-bold text-gray-900">
-                        <Link to={`/tasks/${task._id}`} className="hover:text-indigo-600 transition-colors">
-                          {task.title}
-                        </Link>
-                      </h2>
-                      <p className="mt-2 text-gray-600 text-sm line-clamp-2">{task.description}</p>
-                    </div>
-                    <div className="flex space-x-2">
-                      <button 
+          <div className="bg-white rounded-xl shadow overflow-hidden">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
+                  {user?.role === 'admin' && (
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned To</th>
+                  )}
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {tasks.map(task => (
+                  <tr key={task._id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="font-medium text-gray-900">{task.title}</div>
+                      <div className="text-sm text-gray-500 line-clamp-1">{task.description}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(task.status)}`}>
+                        {task.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getPriorityColor(task.priority)}`}>
+                        {task.priority}
+                      </span>
+                    </td>
+                    {user?.role === 'admin' && (
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {task.assignedTo?.name || 'Unassigned'}
+                      </td>
+                    )}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {new Date(task.dueDate).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <button
                         onClick={() => navigate(`/tasks/${task._id}`)}
-                        className="text-indigo-600 hover:text-indigo-900"
-                        title="Edit"
+                        className="text-indigo-600 hover:text-indigo-900 mr-3"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                          <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                        </svg>
+                        Edit
                       </button>
-                      <button 
+                      <button
                         onClick={() => handleDelete(task._id)}
                         className="text-red-600 hover:text-red-900"
-                        title="Delete"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                        </svg>
+                        Delete
                       </button>
-                    </div>
-                  </div>
-                  
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(task.status)}`}>
-                      {task.status}
-                    </span>
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getPriorityColor(task.priority)}`}>
-                      {task.priority} priority
-                    </span>
-                  </div>
-                  
-                  <div className="mt-4 flex items-center text-sm text-gray-500">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    <span>{task.assignedTo?.name || 'Unassigned'}</span>
-                  </div>
-                  
-                  <div className="mt-2 flex items-center text-sm text-gray-500">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    <span>Due: {new Date(task.dueDate).toLocaleDateString()}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
 
           {/* Pagination */}
-          <div className="mt-8 flex justify-center">
-            <button 
-              disabled={pagination.page <= 1}
-              onClick={() => handlePageChange(pagination.page - 1)}
-              className="px-4 py-2 border rounded-l disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
-            >
-              Previous
-            </button>
-            <span className="px-4 py-2 border-t border-b bg-gray-50">
-              Page {pagination.page} of {Math.ceil(pagination.total / pagination.limit) || 1}
-            </span>
-            <button 
-              disabled={pagination.page * pagination.limit >= pagination.total}
-              onClick={() => handlePageChange(pagination.page + 1)}
-              className="px-4 py-2 border rounded-r disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
-            >
-              Next
-            </button>
+          <div className="mt-8 flex justify-between items-center">
+            <div className="text-sm text-gray-700">
+              Showing <span className="font-medium">{(pagination.page - 1) * pagination.limit + 1}</span> to{' '}
+              <span className="font-medium">
+                {Math.min(pagination.page * pagination.limit, pagination.total)}
+              </span>{' '}
+              of <span className="font-medium">{pagination.total}</span> tasks
+            </div>
+            <div className="flex space-x-2">
+              <button
+                disabled={pagination.page <= 1}
+                onClick={() => handlePageChange(pagination.page - 1)}
+                className={`px-4 py-2 border rounded ${pagination.page <= 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'}`}
+              >
+                Previous
+              </button>
+              <button
+                disabled={pagination.page >= pagination.pages}
+                onClick={() => handlePageChange(pagination.page + 1)}
+                className={`px-4 py-2 border rounded ${pagination.page >= pagination.pages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'}`}
+              >
+                Next
+              </button>
+            </div>
           </div>
         </>
       )}

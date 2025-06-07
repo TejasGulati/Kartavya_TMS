@@ -1,3 +1,4 @@
+// /Users/tejasgulati/Desktop/kartavya/client/src/context/AuthContext.js
 import { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
 import api from '../services/api';
 import { useNavigate } from 'react-router-dom';
@@ -15,12 +16,16 @@ const initialState = {
 function authReducer(state, action) {
   switch (action.type) {
     case 'LOGIN_SUCCESS':
-    case 'REGISTER_SUCCESS':
       return {
         ...state,
         isAuthenticated: true,
         user: action.payload.user,
         token: action.payload.token,
+        loading: false,
+      };
+    case 'REGISTER_SUCCESS':
+      return {
+        ...state,
         loading: false,
       };
     case 'LOGOUT':
@@ -44,11 +49,25 @@ export const AuthProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
   const navigate = useNavigate();
 
-  const logout = useCallback(() => {
-    localStorage.removeItem('token');
-    dispatch({ type: 'LOGOUT' });
-    navigate('/login');
-    toast.success('Logged out successfully');
+  const logout = useCallback(async () => {
+    try {
+      // Call backend logout endpoint
+      await api.post('/api/auth/logout');
+      
+      // Clear local storage and state
+      localStorage.removeItem('token');
+      dispatch({ type: 'LOGOUT' });
+      
+      // Redirect to login and show success message
+      navigate('/login');
+      toast.success('Logged out successfully');
+    } catch (error) {
+      // Even if logout API fails, we still want to clear local state
+      localStorage.removeItem('token');
+      dispatch({ type: 'LOGOUT' });
+      navigate('/login');
+      toast.error(error.response?.data?.message || 'Logout failed');
+    }
   }, [navigate]);
 
   useEffect(() => {
@@ -70,22 +89,17 @@ export const AuthProvider = ({ children }) => {
     verifyToken();
   }, [state.token, logout]);
 
-  const register = useCallback(async (name, email, password, role = 'user') => {
+  const register = useCallback(async (name, email, password) => {
     try {
       const res = await api.post('/api/auth/register', {
         name,
         email,
         password,
-        role,
       });
       
-      localStorage.setItem('token', res.data.token);
-      dispatch({
-        type: 'REGISTER_SUCCESS',
-        payload: { user: res.data.user, token: res.data.token },
-      });
-      toast.success('Registration successful!');
-      navigate('/tasks');
+      toast.success('Registration successful! Please login');
+      navigate('/login');
+      dispatch({ type: 'REGISTER_SUCCESS' });
       return res.data;
     } catch (error) {
       toast.error(
@@ -141,7 +155,9 @@ export const AuthProvider = ({ children }) => {
   const updateUser = useCallback(async (userId, userData) => {
     try {
       const res = await api.put(`/api/users/${userId}`, userData);
-      dispatch({ type: 'SET_USER', payload: res.data.user });
+      if (userId === state.user?._id) {
+        dispatch({ type: 'SET_USER', payload: res.data.user });
+      }
       toast.success('Profile updated successfully');
       return res.data;
     } catch (error) {
@@ -150,7 +166,7 @@ export const AuthProvider = ({ children }) => {
       );
       throw error;
     }
-  }, []);
+  }, [state.user?._id]);
 
   const deleteUser = useCallback(async (userId) => {
     try {
