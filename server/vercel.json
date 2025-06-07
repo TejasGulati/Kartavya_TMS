@@ -16,10 +16,10 @@
     "env": {
       "NODE_ENV": "production",
       "MONGODB_URI": "mongodb+srv://bcda8232:3lii8z3kpKqqFGKr@cluster0.6vdjaui.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
-      "JWT_SECRET": "@your-jwt-secret",
+      "JWT_SECRET": "DrfvKC7Of9cO4h941fdSaAfARG0ZEdWse8nlHnmkxOg=",
       "JWT_EXPIRE": "7d",
       "MAX_FILE_SIZE": "5242880",
       "UPLOAD_PATH": "uploads",
-      "CORS_ORIGIN": "https://your-frontend-url.vercel.app"
+      "CORS_ORIGIN": "https://kartavya-tms.vercel.app/"
     }
   }

@@ -23,17 +23,20 @@ const UsersPage = () => {
     fetchUsers();
   }, [getAllUsers]);
 
-  const handleDelete = async (userId) => {
-    if (window.confirm('Are you sure you want to delete this user?')) {
-      try {
-        await deleteUser(userId);
-        setUsers(prev => prev.filter(u => u._id !== userId));
-        toast.success('User deleted successfully');
-      } catch (error) {
-        toast.error('Failed to delete user');
-      }
+  // In UsersPage.js
+const handleDelete = async (userId) => {
+  if (window.confirm('Are you sure you want to delete this user?')) {
+    try {
+      await deleteUser(userId);
+      setUsers(prev => prev.filter(u => u._id !== userId));
+    } catch (error) {
+      const message = error.response?.data?.message || 
+                     error.response?.data?.errors?.map(e => e.message).join(', ') || 
+                     'Failed to delete user';
+      toast.error(message);
     }
-  };
+  }
+};
 
   if (loading) return <div className="text-center py-8">Loading users...</div>;
 

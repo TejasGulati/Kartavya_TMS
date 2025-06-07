@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://backend:5001
+      - CHOKIDAR_USEPOLLING=true # For hot reloading in Docker
+    volumes:
+      - ./client:/app
+      - /app/node_modules
+    networks:
+      - kartavya_network
+    depends_on:
+      - backend
+
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    ports:
+      - "5001:5001"
+    environment:
+      - NODE_ENV=development
+      - PORT=5001
+      - MONGODB_URI=mongodb+srv://bcda8232:3lii8z3kpKqqFGKr@cluster0.6vdjaui.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+      - JWT_SECRET=DrfvKC7Of9cO4h941fdSaAfARG0ZEdWse8nlHnmkxOg=
+      - JWT_EXPIRE=7d
+      - UPLOAD_PATH=uploads
+      - MAX_FILE_SIZE=5242880
+    volumes:
+      - ./server:/app
+      - /app/node_modules
+      - ./server/uploads:/app/uploads
+    networks:
+      - kartavya_network
+    depends_on:
+      - mongo
+
+  mongo:
+    image: mongo:5.0
+    container_name: mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: bcda8232
+      MONGO_INITDB_ROOT_PASSWORD: 3lii8z3kpKqqFGKr
+    volumes:
+      - mongo_data:/data/db
+    ports:
+      - "27017:27017"
+    networks:
+      - kartavya_network
+
+networks:
+  kartavya_network:
+
+volumes:
+  mongo_data:

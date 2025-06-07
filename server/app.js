@@ -24,10 +24,12 @@ app.use(helmet());
 // CORS configuration setup.
 app.use(cors({
   origin: process.env.NODE_ENV === 'production'
-    ? ['https://frontend_domain_from_vercel']
+    ? ['https://kartavya-tms.vercel.app']
     : ['http://localhost:3000', 'http://localhost:5173'],
   credentials: true
 }));
+
+
 
 // Logging middleware setup.
 if (process.env.NODE_ENV === 'development') {

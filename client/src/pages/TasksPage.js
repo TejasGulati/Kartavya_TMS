@@ -30,7 +30,7 @@ const TasksPage = () => {
         const res = await api.get('/api/users');
         setUsers(res.data.users);
       } catch (error) {
-        toast.error('Failed to load users');
+        // toast.error('Failed to load users');
       }
     };
     if (user?.role === 'admin') fetchUsers();
@@ -63,7 +63,6 @@ const TasksPage = () => {
     if (window.confirm('Are you sure you want to delete this task?')) {
       try {
         await deleteTask(id);
-        toast.success('Task deleted successfully');
       } catch (error) {
         toast.error(error.message || 'Failed to delete task');
       }
@@ -101,15 +100,17 @@ const TasksPage = () => {
           <h1 className="text-2xl font-bold text-gray-800">Task Management</h1>
           <p className="text-gray-600 mt-1">Welcome back, {user?.name || 'User'}! Manage and track your tasks efficiently</p>
         </div>
-        <button 
-          onClick={() => navigate('/tasks/new')}
-          className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-4 py-2 rounded-lg shadow-md transition-all"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
-          </svg>
-          Create Task
-        </button>
+        {user?.role === 'admin' && (
+          <button 
+            onClick={() => navigate('/tasks/new')}
+            className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-4 py-2 rounded-lg shadow-md transition-all"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+            </svg>
+            Create Task
+          </button>
+        )}
       </div>
 
       <div className="mb-6 bg-white p-4 rounded-xl shadow">
@@ -236,12 +237,14 @@ const TasksPage = () => {
           </svg>
           <h3 className="mt-4 text-xl font-medium text-gray-900">No tasks found</h3>
           <p className="mt-1 text-gray-500">Try adjusting your filters or create a new task</p>
-          <button
-            onClick={() => navigate('/tasks/new')}
-            className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none"
-          >
-            Create Task
-          </button>
+          {user?.role === 'admin' && (
+            <button
+              onClick={() => navigate('/tasks/new')}
+              className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none"
+            >
+              Create Task
+            </button>
+          )}
         </div>
       ) : (
         <>

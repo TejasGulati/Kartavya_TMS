@@ -84,13 +84,26 @@ exports.updateUser = async (req, res) => {
 // @access  Private/Admin
 exports.deleteUser = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
+    const userId = req.params.id;
+    console.log('Attempting to delete user with ID:', userId);
+
+    // Validate ObjectId format
+    if (!userId.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Invalid user ID format'
+      });
+    }
+
+    const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({
         status: 'error',
         message: 'User not found'
       });
     }
+
+    console.log('Found user:', user.name, user.email);
 
     // Prevent self-deletion
     if (user._id.toString() === req.user._id.toString()) {
@@ -100,22 +113,41 @@ exports.deleteUser = async (req, res) => {
       });
     }
 
-    // Reassign tasks assigned to this user
-    await Task.updateMany(
-      { assignedTo: user._id },
-      { $set: { assignedTo: null } }
-    );
+    // Try to reassign tasks assigned to this user (if Task model exists)
+    try {
+      const Task = require('../models/Task');
+      const updateResult = await Task.updateMany(
+        { assignedTo: user._id },
+        { $set: { assignedTo: null } }
+      );
+      console.log('Tasks updated:', updateResult.modifiedCount);
+    } catch (taskError) {
+      console.log('Task model not found or error updating tasks:', taskError.message);
+      // Continue with user deletion even if task update fails
+    }
 
-    await user.remove();
+    // Delete the user using findByIdAndDelete
+    const deletedUser = await User.findByIdAndDelete(userId);
+    
+    if (!deletedUser) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'User not found or already deleted'
+      });
+    }
+
+    console.log('User deleted successfully:', deletedUser.name);
 
     res.json({
       status: 'success',
       message: 'User deleted successfully'
     });
   } catch (error) {
+    console.error('Delete user error:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({
       status: 'error',
-      message: 'Server error'
+      message: 'Server error: ' + error.message
     });
   }
 };

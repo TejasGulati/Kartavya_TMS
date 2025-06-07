@@ -15,7 +15,6 @@ const LoginPage = () => {
     setIsLoading(true);
     try {
       await login(email, password);
-      toast.success('Login successful!');
       navigate('/tasks');
     } catch (error) {
       // Extract error message properly
