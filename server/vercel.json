@@ -15,7 +15,7 @@
     ],
     "env": {
       "NODE_ENV": "production",
-      "MONGODB_URI": "@your-mongodb-uri",
+      "MONGODB_URI": "mongodb+srv://bcda8232:3lii8z3kpKqqFGKr@cluster0.6vdjaui.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
       "JWT_SECRET": "@your-jwt-secret",
       "JWT_EXPIRE": "7d",
       "MAX_FILE_SIZE": "5242880",
