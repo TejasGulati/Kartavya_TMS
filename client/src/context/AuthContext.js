@@ -1,4 +1,3 @@
-// /Users/tejasgulati/Desktop/kartavya/client/src/context/AuthContext.js
 import { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
 import api from '../services/api';
 import { useNavigate } from 'react-router-dom';
@@ -49,25 +48,11 @@ export const AuthProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
   const navigate = useNavigate();
 
-  const logout = useCallback(async () => {
-    try {
-      // Call backend logout endpoint
-      await api.post('/api/auth/logout');
-      
-      // Clear local storage and state
-      localStorage.removeItem('token');
-      dispatch({ type: 'LOGOUT' });
-      
-      // Redirect to login and show success message
-      navigate('/login');
-      toast.success('Logged out successfully');
-    } catch (error) {
-      // Even if logout API fails, we still want to clear local state
-      localStorage.removeItem('token');
-      dispatch({ type: 'LOGOUT' });
-      navigate('/login');
-      toast.error(error.response?.data?.message || 'Logout failed');
-    }
+  const logout = useCallback(() => {
+    localStorage.removeItem('token');
+    dispatch({ type: 'LOGOUT' });
+    navigate('/login');
+    toast.success('Logged out successfully');
   }, [navigate]);
 
   useEffect(() => {
@@ -89,22 +74,23 @@ export const AuthProvider = ({ children }) => {
     verifyToken();
   }, [state.token, logout]);
 
-  const register = useCallback(async (name, email, password) => {
+  const register = useCallback(async (name, email, password, role = 'user') => {
     try {
       const res = await api.post('/api/auth/register', {
         name,
         email,
         password,
+        role
       });
-      
       toast.success('Registration successful! Please login');
       navigate('/login');
       dispatch({ type: 'REGISTER_SUCCESS' });
       return res.data;
     } catch (error) {
-      toast.error(
-        error.response?.data?.message || 'Registration failed. Please try again.'
-      );
+      const message = error.response?.data?.message || 
+        error.response?.data?.errors?.map(e => e.message).join(', ') || 
+        'Registration failed. Please try again.';
+      toast.error(message);
       throw error;
     }
   }, [navigate]);
@@ -115,15 +101,19 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('token', res.data.token);
       dispatch({
         type: 'LOGIN_SUCCESS',
-        payload: { user: res.data.user, token: res.data.token },
+        payload: { 
+          user: res.data.user, 
+          token: res.data.token 
+        },
       });
       toast.success('Login successful!');
       navigate('/tasks');
       return res.data;
     } catch (error) {
-      toast.error(
-        error.response?.data?.message || 'Invalid credentials. Please try again.'
-      );
+      const message = error.response?.data?.message || 
+        error.response?.data?.errors?.map(e => e.message).join(', ') || 
+        'Invalid credentials. Please try again.';
+      toast.error(message);
       throw error;
     }
   }, [navigate]);
@@ -133,9 +123,9 @@ export const AuthProvider = ({ children }) => {
       const res = await api.get('/api/users');
       return res.data.users;
     } catch (error) {
-      toast.error(
-        error.response?.data?.message || 'Failed to fetch users. Please try again.'
-      );
+      const message = error.response?.data?.message || 
+        'Failed to fetch users. Please try again.';
+      toast.error(message);
       throw error;
     }
   }, []);
@@ -145,9 +135,9 @@ export const AuthProvider = ({ children }) => {
       const res = await api.get(`/api/users/${userId}`);
       return res.data.user;
     } catch (error) {
-      toast.error(
-        error.response?.data?.message || 'Failed to fetch user. Please try again.'
-      );
+      const message = error.response?.data?.message || 
+        'Failed to fetch user. Please try again.';
+      toast.error(message);
       throw error;
     }
   }, []);
@@ -161,9 +151,10 @@ export const AuthProvider = ({ children }) => {
       toast.success('Profile updated successfully');
       return res.data;
     } catch (error) {
-      toast.error(
-        error.response?.data?.message || 'Failed to update profile. Please try again.'
-      );
+      const message = error.response?.data?.message || 
+        error.response?.data?.errors?.map(e => e.message).join(', ') || 
+        'Failed to update profile. Please try again.';
+      toast.error(message);
       throw error;
     }
   }, [state.user?._id]);
@@ -176,9 +167,9 @@ export const AuthProvider = ({ children }) => {
       }
       toast.success('User deleted successfully');
     } catch (error) {
-      toast.error(
-        error.response?.data?.message || 'Failed to delete user. Please try again.'
-      );
+      const message = error.response?.data?.message || 
+        'Failed to delete user. Please try again.';
+      toast.error(message);
       throw error;
     }
   }, [logout, state.user?._id]);

@@ -1,4 +1,3 @@
-// /Users/tejasgulati/Desktop/kartavya/client/src/context/TaskContext.js
 import { createContext, useContext, useState, useCallback } from 'react';
 import api from '../services/api';
 import { toast } from 'react-hot-toast';
@@ -38,7 +37,10 @@ export const TaskProvider = ({ children }) => {
       });
       return res.data;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to fetch tasks');
+      const message = error.response?.data?.message || 
+        error.response?.data?.errors?.map(e => e.message).join(', ') || 
+        'Failed to fetch tasks';
+      toast.error(message);
       throw error;
     } finally {
       setLoading(false);
@@ -52,7 +54,9 @@ export const TaskProvider = ({ children }) => {
       setCurrentTask(res.data.task);
       return res.data.task;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to fetch task');
+      const message = error.response?.data?.message || 
+        'Failed to fetch task';
+      toast.error(message);
       throw error;
     } finally {
       setLoading(false);
@@ -88,13 +92,10 @@ export const TaskProvider = ({ children }) => {
       toast.success('Task created successfully');
       return res.data.task;
     } catch (error) {
-      if (error.response?.data?.errors) {
-        error.response.data.errors.forEach(err => {
-          toast.error(`${err.field}: ${err.message}`);
-        });
-      } else {
-        toast.error(error.response?.data?.message || 'Failed to create task');
-      }
+      const message = error.response?.data?.message || 
+        error.response?.data?.errors?.map(e => `${e.field}: ${e.message}`).join(', ') || 
+        'Failed to create task';
+      toast.error(message);
       throw error;
     }
   }, []);
@@ -105,13 +106,10 @@ export const TaskProvider = ({ children }) => {
       toast.success('Task updated successfully');
       return res.data.task;
     } catch (error) {
-      if (error.response?.data?.errors) {
-        error.response.data.errors.forEach(err => {
-          toast.error(`${err.field}: ${err.message}`);
-        });
-      } else {
-        toast.error(error.response?.data?.message || 'Failed to update task');
-      }
+      const message = error.response?.data?.message || 
+        error.response?.data?.errors?.map(e => `${e.field}: ${e.message}`).join(', ') || 
+        'Failed to update task';
+      toast.error(message);
       throw error;
     }
   }, []);
@@ -122,7 +120,9 @@ export const TaskProvider = ({ children }) => {
       toast.success('Task deleted successfully');
       return true;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to delete task');
+      const message = error.response?.data?.message || 
+        'Failed to delete task';
+      toast.error(message);
       throw error;
     }
   }, []);
@@ -155,7 +155,10 @@ export const TaskProvider = ({ children }) => {
       toast.success('Attachments uploaded successfully');
       return res.data.task;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to upload attachments');
+      const message = error.response?.data?.message || 
+        error.response?.data?.errors?.map(e => e.message).join(', ') || 
+        'Failed to upload attachments';
+      toast.error(message);
       throw error;
     }
   }, []);
@@ -177,7 +180,9 @@ export const TaskProvider = ({ children }) => {
       
       return res.data;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to download attachment');
+      const message = error.response?.data?.message || 
+        'Failed to download attachment';
+      toast.error(message);
       throw error;
     }
   }, []);
@@ -188,7 +193,9 @@ export const TaskProvider = ({ children }) => {
       toast.success('Attachment deleted successfully');
       return true;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to delete attachment');
+      const message = error.response?.data?.message || 
+        'Failed to delete attachment';
+      toast.error(message);
       throw error;
     }
   }, []);
